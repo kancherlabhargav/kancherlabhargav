@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java — Core Language Deep Dive</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #13111a;
+    --surface: #1a1826;
+    --surface2: #211f2f;
+    --border: #2a2740;
+    --border2: #352f50;
+    --java: #f89820;
+    --java-dim: rgba(248,152,32,0.1);
+    --java-border: rgba(248,152,32,0.25);
+    --blue: #7eb3ff;
+    --purple: #b09cf5;
+    --green: #57d49a;
+    --red: #f47c7c;
+    --teal: #4ecdc4;
+    --text: #c5bfe0;
+    --muted: #5e587a;
+    --bright: #ede8ff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; line-height:1.6; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 13px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-logo {
+    background: var(--java);
+    color: #000;
+    font-weight: 800;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .topbar-title { font-size: 15px; font-weight: 700; color: var(--bright); }
+  .topbar-sub { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-left: 4px; }
+
+  .layout { display: grid; grid-template-columns: 230px 1fr; min-height: calc(100vh - 50px); }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    position: sticky; top: 50px;
+    height: calc(100vh - 50px);
+    overflow-y: auto;
+  }
+  .sidebar-section { padding: 8px 18px 4px; font-size: 10px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; font-weight: 700; margin-top: 10px; }
+  .sidebar-link { display: block; padding: 8px 20px; font-size: 13px; color: var(--muted); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s; }
+  .sidebar-link:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+  .sidebar-link.active { color: var(--java); border-left-color: var(--java); background: var(--java-dim); }
+
+  .main { padding: 44px 52px; max-width: 880px; }
+  .section { margin-bottom: 60px; scroll-margin-top: 72px; }
+
+  .section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--java-dim);
+    border: 1px solid var(--java-border);
+    color: var(--java);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+  }
+
+  .section h2 { font-size: 1.8rem; font-weight: 700; color: var(--bright); letter-spacing: -0.5px; margin-bottom: 12px; line-height: 1.2; }
+  .lead { font-size: 14.5px; color: #7a7295; margin-bottom: 28px; line-height: 1.75; border-left: 3px solid var(--java); padding-left: 16px; }
+  h3 { font-size: 1rem; font-weight: 700; color: var(--bright); margin: 28px 0 12px; display: flex; align-items: center; gap: 8px; }
+  p { font-size: 14px; color: var(--text); margin-bottom: 12px; line-height: 1.8; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 16px 0; }
+  .card { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 18px; transition: border-color 0.2s; }
+  .card:hover { border-color: var(--java-border); }
+  .card .card-icon { font-size: 22px; margin-bottom: 10px; }
+  .card .card-title { font-size: 13px; font-weight: 700; color: var(--bright); margin-bottom: 6px; }
+  .card .card-text { font-size: 12.5px; color: #7a7295; line-height: 1.65; }
+
+  .code { background: #0b0912; border: 1px solid var(--border2); border-radius: 8px; margin: 16px 0; overflow: hidden; }
+  .code-header { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 9px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .code-header span { font-size: 11.5px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .code-header .lang-badge { background: var(--java-dim); color: var(--java); font-size: 10px; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--java-border); }
+  .code-body { padding: 20px 22px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 2; overflow-x: auto; }
+
+  .c { color: #3d3558; }
+  .k { color: #c792ea; }
+  .t { color: var(--teal); }
+  .a { color: var(--java); }
+  .s { color: #c3e88d; }
+  .m { color: #82aaff; }
+  .n { color: var(--java); }
+  .g { color: var(--green); }
+  .v { color: #eeffff; }
+  .num { color: #f78c6c; }
+
+  .alert { border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: 13px; display: flex; gap: 12px; align-items: flex-start; line-height: 1.65; }
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+  .alert.info { background: rgba(126,179,255,0.06); border: 1px solid rgba(126,179,255,0.2); color: #7a7295; }
+  .alert.tip { background: rgba(248,152,32,0.06); border: 1px solid var(--java-border); color: #7a7295; }
+  .alert.new { background: rgba(87,212,154,0.06); border: 1px solid rgba(87,212,154,0.2); color: #7a7295; }
+  .alert strong { color: var(--bright); }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:16px 0; }
+  th { background:var(--surface2); border:1px solid var(--border2); padding:10px 14px; text-align:left; font-size:11px; letter-spacing:0.5px; color:var(--muted); text-transform:uppercase; font-family:'JetBrains Mono',monospace; }
+  td { border:1px solid var(--border); padding:10px 14px; color:var(--text); font-size:13px; }
+  tr:hover td { background:rgba(255,255,255,0.02); }
+
+  .hl { background:var(--java-dim); color:var(--java); padding:1px 6px; border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .divider { height:1px; background:var(--border); margin:36px 0; }
+
+  .version-tag { display: inline-block; background: rgba(87,212,154,0.1); border: 1px solid rgba(87,212,154,0.25); color: var(--green); font-size: 10px; padding: 2px 8px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; margin-left: 8px; vertical-align: middle; }
+
+  @media(max-width:768px){ .layout{grid-template-columns:1fr;} .sidebar{display:none;} .main{padding:24px 18px;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">☕ Java</span>
+  <span class="topbar-title">Java — Core Language Deep Dive</span>
+  <span class="topbar-sub">// fundamentals to modern features (Java 8 → 21)</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">Foundations</div>
+    <a class="sidebar-link active" href="#oop">OOP Principles</a>
+    <a class="sidebar-link" href="#collections">Collections Framework</a>
+    <a class="sidebar-link" href="#generics">Generics</a>
+    <a class="sidebar-link" href="#exceptions">Exception Handling</a>
+
+    <div class="sidebar-section">Java 8 Features</div>
+    <a class="sidebar-link" href="#lambda">Lambda Expressions</a>
+    <a class="sidebar-link" href="#streams">Streams API</a>
+    <a class="sidebar-link" href="#optional">Optional</a>
+    <a class="sidebar-link" href="#functional">Functional Interfaces</a>
+
+    <div class="sidebar-section">Concurrency</div>
+    <a class="sidebar-link" href="#threads">Threads & Runnable</a>
+    <a class="sidebar-link" href="#concurrent">ExecutorService</a>
+    <a class="sidebar-link" href="#completable">CompletableFuture</a>
+
+    <div class="sidebar-section">Modern Java (11–21)</div>
+    <a class="sidebar-link" href="#records">Records</a>
+    <a class="sidebar-link" href="#sealed">Sealed Classes</a>
+    <a class="sidebar-link" href="#pattern">Pattern Matching</a>
+    <a class="sidebar-link" href="#textblocks">Text Blocks & More</a>
+
+    <div class="sidebar-section">JVM Internals</div>
+    <a class="sidebar-link" href="#memory">Memory Model</a>
+    <a class="sidebar-link" href="#gc">Garbage Collection</a>
+  </div>
+
+  <div class="main">
+
+    <!-- OOP -->
+    <div class="section" id="oop">
+      <div class="section-badge">🏗️ Section 1</div>
+      <h2>OOP — The Four Pillars</h2>
+      <p class="lead">Object-Oriented Programming is Java's core paradigm. Mastering all four pillars — encapsulation, inheritance, polymorphism, abstraction — is what separates junior from senior Java developers.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🔒</div>
+          <div class="card-title">Encapsulation</div>
+          <div class="card-text">Hide internal state. private fields + public getters/setters. Objects control their own data — no external code directly manipulates state. Reduces coupling.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧬</div>
+          <div class="card-title">Inheritance</div>
+          <div class="card-text">extends keyword. Child class inherits parent behavior. Use for IS-A relationships. Java supports single inheritance for classes but multiple via interfaces.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎭</div>
+          <div class="card-title">Polymorphism</div>
+          <div class="card-text">One interface, multiple behaviors. Method overriding (runtime) + method overloading (compile-time). Call shape.draw() on Circle, Square, Triangle — each behaves differently.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <div class="card-title">Abstraction</div>
+          <div class="card-text">Hide implementation details, show only essential features. abstract classes and interfaces. You use List without knowing if it's ArrayList or LinkedList underneath.</div>
+        </div>
+      </div>
+
+      <div class="code">
+        <div class="code-header"><span>Polymorphism in action</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Abstract class — partial implementation</span><br>
+<span class="k">public abstract class</span> <span class="t">Payment</span> {<br>
+&nbsp;&nbsp;<span class="k">protected</span> <span class="t">BigDecimal</span> amount;<br>
+&nbsp;&nbsp;<span class="k">public abstract void</span> <span class="m">process</span>();  <span class="c">// subclasses must implement</span><br>
+&nbsp;&nbsp;<span class="k">public void</span> <span class="m">log</span>() { System.out.<span class="m">println</span>(<span class="s">"Processing: "</span> + amount); }<br>
+}<br><br>
+<span class="k">public class</span> <span class="t">UpiPayment</span> <span class="k">extends</span> <span class="t">Payment</span> {<br>
+&nbsp;&nbsp;<span class="a">@Override</span><br>
+&nbsp;&nbsp;<span class="k">public void</span> <span class="m">process</span>() { <span class="c">/* UPI-specific logic */</span> }<br>
+}<br><br>
+<span class="k">public class</span> <span class="t">CardPayment</span> <span class="k">extends</span> <span class="t">Payment</span> {<br>
+&nbsp;&nbsp;<span class="a">@Override</span><br>
+&nbsp;&nbsp;<span class="k">public void</span> <span class="m">process</span>() { <span class="c">/* Card-specific logic */</span> }<br>
+}<br><br>
+<span class="c">// Polymorphism — same method call, different behavior</span><br>
+<span class="t">List</span>&lt;<span class="t">Payment</span>&gt; payments = <span class="t">List</span>.<span class="m">of</span>(<span class="k">new</span> <span class="t">UpiPayment</span>(), <span class="k">new</span> <span class="t">CardPayment</span>());<br>
+payments.<span class="m">forEach</span>(<span class="t">Payment</span>::<span class="m">process</span>); <span class="c">// each calls its own implementation</span>
+        </div>
+      </div>
+
+      <h3>🔌 Interface vs Abstract Class</h3>
+      <table>
+        <tr><th></th><th>Interface</th><th>Abstract Class</th></tr>
+        <tr><td>State (fields)</td><td>Only constants</td><td>✅ Can have instance fields</td></tr>
+        <tr><td>Multiple inheritance</td><td>✅ implement many</td><td>❌ extend only one</td></tr>
+        <tr><td>Constructor</td><td>❌ No</td><td>✅ Yes</td></tr>
+        <tr><td>Default methods</td><td>✅ (Java 8+)</td><td>✅</td></tr>
+        <tr><td>Use when</td><td>Defining a contract (can-do)</td><td>Sharing base behavior (is-a)</td></tr>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Collections -->
+    <div class="section" id="collections">
+      <div class="section-badge">📚 Section 2</div>
+      <h2>Collections Framework</h2>
+      <p class="lead">Java's built-in data structures. Choosing the right collection for the right job is a core skill — it directly impacts performance. Know the time complexity of each operation.</p>
+
+      <table>
+        <tr><th>Collection</th><th>Backed By</th><th>get/contains</th><th>add/remove</th><th>Use When</th></tr>
+        <tr><td><strong style="color:var(--java)">ArrayList</strong></td><td>Dynamic array</td><td>O(1)</td><td>O(n) (amortized O(1) add end)</td><td>Random access, most lists</td></tr>
+        <tr><td><strong style="color:var(--java)">LinkedList</strong></td><td>Doubly linked</td><td>O(n)</td><td>O(1) at head/tail</td><td>Queue/Deque, frequent insertions at ends</td></tr>
+        <tr><td><strong style="color:var(--blue)">HashSet</strong></td><td>HashMap</td><td>O(1)</td><td>O(1)</td><td>Unique elements, fast lookup</td></tr>
+        <tr><td><strong style="color:var(--blue)">TreeSet</strong></td><td>Red-Black tree</td><td>O(log n)</td><td>O(log n)</td><td>Sorted unique elements, range queries</td></tr>
+        <tr><td><strong style="color:var(--purple)">HashMap</strong></td><td>Array of buckets</td><td>O(1)</td><td>O(1)</td><td>Key-value lookup — most maps</td></tr>
+        <tr><td><strong style="color:var(--purple)">LinkedHashMap</strong></td><td>HashMap + linked</td><td>O(1)</td><td>O(1)</td><td>Insertion-order iteration, LRU caches</td></tr>
+        <tr><td><strong style="color:var(--purple)">TreeMap</strong></td><td>Red-Black tree</td><td>O(log n)</td><td>O(log n)</td><td>Sorted keys, firstKey/lastKey, subMap</td></tr>
+      </table>
+
+      <div class="code">
+        <div class="code-header"><span>Common collection patterns</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Group elements by key — classic Map pattern</span><br>
+<span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">List</span>&lt;<span class="t">Order</span>&gt;&gt; ordersByCity = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();<br>
+orders.<span class="m">forEach</span>(o -&gt;<br>
+&nbsp;&nbsp;ordersByCity.<span class="m">computeIfAbsent</span>(o.<span class="m">getCity</span>(), k -&gt; <span class="k">new</span> <span class="t">ArrayList</span>&lt;&gt;()).<span class="m">add</span>(o)<br>
+);<br><br>
+<span class="c">// Count occurrences</span><br>
+<span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Long</span>&gt; wordCount = <span class="k">new</span> <span class="t">HashMap</span>&lt;&gt;();<br>
+words.<span class="m">forEach</span>(w -&gt; wordCount.<span class="m">merge</span>(w, <span class="num">1L</span>, <span class="t">Long</span>::<span class="m">sum</span>));<br><br>
+<span class="c">// Immutable collections (Java 9+)</span><br>
+<span class="t">List</span>&lt;<span class="t">String</span>&gt; roles = <span class="t">List</span>.<span class="m">of</span>(<span class="s">"ADMIN"</span>, <span class="s">"USER"</span>, <span class="s">"VIEWER"</span>);<br>
+<span class="t">Map</span>&lt;<span class="t">String</span>, <span class="t">Integer</span>&gt; codes = <span class="t">Map</span>.<span class="m">of</span>(<span class="s">"OK"</span>, <span class="num">200</span>, <span class="s">"NOT_FOUND"</span>, <span class="num">404</span>);
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Generics -->
+    <div class="section" id="generics">
+      <div class="section-badge">🧩 Section 3</div>
+      <h2>Generics</h2>
+      <p class="lead">Generics enable type-safe code that works with any type. Write once, use with any type — without casting. The compiler catches type errors at compile time.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Generic classes, methods, wildcards</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Generic class — T is a type parameter</span><br>
+<span class="k">public class</span> <span class="t">ApiResponse</span>&lt;<span class="t">T</span>&gt; {<br>
+&nbsp;&nbsp;<span class="k">private</span> <span class="t">T</span> data;<br>
+&nbsp;&nbsp;<span class="k">private</span> <span class="t">String</span> message;<br>
+&nbsp;&nbsp;<span class="k">private int</span> statusCode;<br>
+&nbsp;&nbsp;<span class="c">// Works for User, Order, List&lt;Product&gt; — any type</span><br>
+}<br><br>
+<span class="c">// Generic method</span><br>
+<span class="k">public static</span> &lt;<span class="t">T</span>&gt; <span class="t">Optional</span>&lt;<span class="t">T</span>&gt; <span class="m">findFirst</span>(<span class="t">List</span>&lt;<span class="t">T</span>&gt; items, <span class="t">Predicate</span>&lt;<span class="t">T</span>&gt; predicate) {<br>
+&nbsp;&nbsp;<span class="k">return</span> items.<span class="m">stream</span>().<span class="m">filter</span>(predicate).<span class="m">findFirst</span>();<br>
+}<br><br>
+<span class="c">// Bounded wildcards</span><br>
+<span class="k">public double</span> <span class="m">sum</span>(<span class="t">List</span>&lt;? <span class="k">extends</span> <span class="t">Number</span>&gt; nums) {  <span class="c">// Integer, Double, Float all ok</span><br>
+&nbsp;&nbsp;<span class="k">return</span> nums.<span class="m">stream</span>().<span class="m">mapToDouble</span>(<span class="t">Number</span>::<span class="m">doubleValue</span>).<span class="m">sum</span>();<br>
+}<br><br>
+<span class="c">// Use:</span><br>
+<span class="t">ApiResponse</span>&lt;<span class="t">User</span>&gt; res = <span class="k">new</span> <span class="t">ApiResponse</span>&lt;&gt;();<br>
+<span class="t">ApiResponse</span>&lt;<span class="t">List</span>&lt;<span class="t">Order</span>&gt;&gt; orders = <span class="k">new</span> <span class="t">ApiResponse</span>&lt;&gt;();
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Exceptions -->
+    <div class="section" id="exceptions">
+      <div class="section-badge">⚠️ Section 4</div>
+      <h2>Exception Handling</h2>
+      <p class="lead">Java has two types: checked (compiler-enforced, extends Exception) and unchecked (runtime, extends RuntimeException). Best practice: use unchecked exceptions in application code, checked for truly recoverable errors.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Custom exceptions + try-with-resources</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Custom unchecked exception (best practice in modern Java)</span><br>
+<span class="k">public class</span> <span class="t">UserNotFoundException</span> <span class="k">extends</span> <span class="t">RuntimeException</span> {<br>
+&nbsp;&nbsp;<span class="k">public</span> <span class="t">UserNotFoundException</span>(<span class="t">Long</span> id) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">super</span>(<span class="s">"User not found with id: "</span> + id);<br>
+&nbsp;&nbsp;}<br>
+}<br><br>
+<span class="c">// try-with-resources — auto-closes resources (Java 7+)</span><br>
+<span class="k">try</span> (<span class="t">InputStream</span> is = <span class="k">new</span> <span class="t">FileInputStream</span>(<span class="s">"file.txt"</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="t">BufferedReader</span> br = <span class="k">new</span> <span class="t">BufferedReader</span>(<span class="k">new</span> <span class="t">InputStreamReader</span>(is))) {<br>
+&nbsp;&nbsp;<span class="c">// is and br are auto-closed even if exception occurs</span><br>
+&nbsp;&nbsp;String line;<br>
+&nbsp;&nbsp;<span class="k">while</span> ((line = br.<span class="m">readLine</span>()) != <span class="k">null</span>) { ... }<br>
+} <span class="k">catch</span> (<span class="t">IOException</span> e) {<br>
+&nbsp;&nbsp;log.<span class="m">error</span>(<span class="s">"Failed to read file"</span>, e);<br>
+&nbsp;&nbsp;<span class="k">throw new</span> <span class="t">FileProcessingException</span>(<span class="s">"Cannot read file"</span>, e); <span class="c">// wrap & rethrow</span><br>
+}
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Lambda -->
+    <div class="section" id="lambda">
+      <div class="section-badge">λ Section 5 · Java 8</div>
+      <h2>Lambda Expressions <span class="version-tag">Java 8+</span></h2>
+      <p class="lead">Lambdas are anonymous functions — concise way to implement functional interfaces. They eliminated verbose anonymous inner classes and enabled a functional programming style in Java.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Before vs After Lambda</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Before Java 8 — anonymous inner class (verbose)</span><br>
+<span class="t">List</span>&lt;<span class="t">String</span>&gt; names = ...;<br>
+<span class="t">Collections</span>.<span class="m">sort</span>(names, <span class="k">new</span> <span class="t">Comparator</span>&lt;<span class="t">String</span>&gt;() {<br>
+&nbsp;&nbsp;<span class="a">@Override</span><br>
+&nbsp;&nbsp;<span class="k">public int</span> <span class="m">compare</span>(<span class="t">String</span> a, <span class="t">String</span> b) { <span class="k">return</span> a.<span class="m">compareTo</span>(b); }<br>
+});<br><br>
+<span class="c">// Java 8 Lambda — same thing in 1 line</span><br>
+names.<span class="m">sort</span>((a, b) -&gt; a.<span class="m">compareTo</span>(b));<br><br>
+<span class="c">// Even shorter with method reference</span><br>
+names.<span class="m">sort</span>(<span class="t">String</span>::<span class="m">compareTo</span>);<br><br>
+<span class="c">// Lambda syntax</span><br>
+() -&gt; <span class="s">"hello"</span>                        <span class="c">// no params</span><br>
+x -&gt; x * <span class="num">2</span>                           <span class="c">// one param</span><br>
+(x, y) -&gt; x + y                      <span class="c">// two params</span><br>
+(x, y) -&gt; { <span class="k">return</span> x + y; }         <span class="c">// block body</span><br>
+<span class="t">String</span>::<span class="m">toLowerCase</span>                  <span class="c">// method reference</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Streams -->
+    <div class="section" id="streams">
+      <div class="section-badge">🌊 Section 6 · Java 8</div>
+      <h2>Streams API <span class="version-tag">Java 8+</span></h2>
+      <p class="lead">Streams let you process collections declaratively with a pipeline of operations. No loops, no temp variables — just transform, filter, and collect in one expression. This is heavily used in Spring Boot services.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Stream operations — real business logic examples</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="t">List</span>&lt;<span class="t">Order</span>&gt; orders = orderRepo.<span class="m">findAll</span>();<br><br>
+<span class="c">// Get total revenue from completed orders over ₹500</span><br>
+<span class="t">BigDecimal</span> revenue = orders.<span class="m">stream</span>()<br>
+&nbsp;&nbsp;.<span class="m">filter</span>(o -&gt; o.<span class="m">getStatus</span>() == <span class="t">OrderStatus</span>.<span class="n">COMPLETED</span>)<br>
+&nbsp;&nbsp;.<span class="m">filter</span>(o -&gt; o.<span class="m">getAmount</span>().<span class="m">compareTo</span>(<span class="k">new</span> <span class="t">BigDecimal</span>(<span class="s">"500"</span>)) &gt; <span class="num">0</span>)<br>
+&nbsp;&nbsp;.<span class="m">map</span>(<span class="t">Order</span>::<span class="m">getAmount</span>)<br>
+&nbsp;&nbsp;.<span class="m">reduce</span>(<span class="t">BigDecimal</span>.<span class="n">ZERO</span>, <span class="t">BigDecimal</span>::<span class="m">add</span>);<br><br>
+<span class="c">// Group orders by status</span><br>
+<span class="t">Map</span>&lt;<span class="t">OrderStatus</span>, <span class="t">List</span>&lt;<span class="t">Order</span>&gt;&gt; byStatus = orders.<span class="m">stream</span>()<br>
+&nbsp;&nbsp;.<span class="m">collect</span>(<span class="t">Collectors</span>.<span class="m">groupingBy</span>(<span class="t">Order</span>::<span class="m">getStatus</span>));<br><br>
+<span class="c">// Top 5 most expensive orders as DTOs</span><br>
+<span class="t">List</span>&lt;<span class="t">OrderDTO</span>&gt; top5 = orders.<span class="m">stream</span>()<br>
+&nbsp;&nbsp;.<span class="m">sorted</span>(<span class="t">Comparator</span>.<span class="m">comparing</span>(<span class="t">Order</span>::<span class="m">getAmount</span>).<span class="m">reversed</span>())<br>
+&nbsp;&nbsp;.<span class="m">limit</span>(<span class="num">5</span>)<br>
+&nbsp;&nbsp;.<span class="m">map</span>(mapper::<span class="m">toDTO</span>)<br>
+&nbsp;&nbsp;.<span class="m">toList</span>();<br><br>
+<span class="c">// Flat map — flatten nested lists</span><br>
+<span class="t">List</span>&lt;<span class="t">String</span>&gt; allTags = products.<span class="m">stream</span>()<br>
+&nbsp;&nbsp;.<span class="m">flatMap</span>(p -&gt; p.<span class="m">getTags</span>().<span class="m">stream</span>())<br>
+&nbsp;&nbsp;.<span class="m">distinct</span>()<br>
+&nbsp;&nbsp;.<span class="m">sorted</span>()<br>
+&nbsp;&nbsp;.<span class="m">toList</span>();
+        </div>
+      </div>
+
+      <div class="alert tip">
+        <span class="alert-icon">🔑</span>
+        <span><strong>Key concept:</strong> Streams are lazy. Intermediate operations (filter, map, sorted) do nothing until a terminal operation (collect, toList, count, reduce) is called. This enables efficient short-circuit evaluation — <span class="hl">findFirst()</span> stops processing as soon as it finds the first match.</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Optional -->
+    <div class="section" id="optional">
+      <div class="section-badge">❓ Section 7 · Java 8</div>
+      <h2>Optional <span class="version-tag">Java 8+</span></h2>
+      <p class="lead">Optional is a container that may or may not contain a value. It eliminates NullPointerExceptions by forcing you to explicitly handle the "not present" case. Return Optional from methods that might not find a result.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Optional — correct usage patterns</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Repository returns Optional</span><br>
+<span class="t">Optional</span>&lt;<span class="t">User</span>&gt; maybeUser = userRepo.<span class="m">findByEmail</span>(email);<br><br>
+<span class="c">// ✅ Pattern 1: map + orElseThrow (most common in services)</span><br>
+<span class="t">UserDTO</span> dto = userRepo.<span class="m">findById</span>(id)<br>
+&nbsp;&nbsp;.<span class="m">map</span>(mapper::<span class="m">toDTO</span>)<br>
+&nbsp;&nbsp;.<span class="m">orElseThrow</span>(() -&gt; <span class="k">new</span> <span class="t">UserNotFoundException</span>(id));<br><br>
+<span class="c">// ✅ Pattern 2: provide default</span><br>
+<span class="t">String</span> name = maybeUser.<span class="m">map</span>(<span class="t">User</span>::<span class="m">getName</span>).<span class="m">orElse</span>(<span class="s">"Guest"</span>);<br><br>
+<span class="c">// ✅ Pattern 3: conditional logic</span><br>
+maybeUser.<span class="m">ifPresentOrElse</span>(<br>
+&nbsp;&nbsp;user -&gt; emailService.<span class="m">send</span>(user.<span class="m">getEmail</span>()),<br>
+&nbsp;&nbsp;() -&gt; log.<span class="m">warn</span>(<span class="s">"User not found, skipping email"</span>)<br>
+);<br><br>
+<span class="c">// ✅ Pattern 4: chain with filter</span><br>
+<span class="k">boolean</span> isAdmin = userRepo.<span class="m">findByEmail</span>(email)<br>
+&nbsp;&nbsp;.<span class="m">filter</span>(u -&gt; u.<span class="m">getRole</span>() == <span class="t">Role</span>.<span class="n">ADMIN</span>)<br>
+&nbsp;&nbsp;.<span class="m">isPresent</span>();<br><br>
+<span class="c">// ❌ Never do this — defeats the purpose!</span><br>
+<span class="k">if</span> (maybeUser.<span class="m">isPresent</span>()) { maybeUser.<span class="m">get</span>(); }
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Functional Interfaces -->
+    <div class="section" id="functional">
+      <div class="section-badge">⚡ Section 8 · Java 8</div>
+      <h2>Functional Interfaces <span class="version-tag">Java 8+</span></h2>
+      <p class="lead">A functional interface has exactly one abstract method. You can pass them as lambdas. Java provides built-in ones in java.util.function that cover 99% of use cases.</p>
+
+      <table>
+        <tr><th>Interface</th><th>Method</th><th>In → Out</th><th>Use For</th></tr>
+        <tr><td><strong style="color:var(--java)">Predicate&lt;T&gt;</strong></td><td>test(T)</td><td>T → boolean</td><td>filter(), testing conditions</td></tr>
+        <tr><td><strong style="color:var(--java)">Function&lt;T,R&gt;</strong></td><td>apply(T)</td><td>T → R</td><td>map(), transforming values</td></tr>
+        <tr><td><strong style="color:var(--java)">Consumer&lt;T&gt;</strong></td><td>accept(T)</td><td>T → void</td><td>forEach(), side effects</td></tr>
+        <tr><td><strong style="color:var(--java)">Supplier&lt;T&gt;</strong></td><td>get()</td><td>() → T</td><td>Lazy init, orElseGet()</td></tr>
+        <tr><td><strong style="color:var(--java)">BiFunction&lt;T,U,R&gt;</strong></td><td>apply(T,U)</td><td>T,U → R</td><td>Two-input transformations</td></tr>
+        <tr><td><strong style="color:var(--java)">UnaryOperator&lt;T&gt;</strong></td><td>apply(T)</td><td>T → T</td><td>replaceAll(), same type in/out</td></tr>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Threads -->
+    <div class="section" id="threads">
+      <div class="section-badge">🧵 Section 9</div>
+      <h2>Threads & Concurrency Basics</h2>
+      <p class="lead">Java supports multi-threading natively. Threads run code concurrently. Critical for building performant apps — Spring Boot handles this internally, but you need to understand it for debugging and async work.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Thread creation approaches</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Modern way — Runnable lambda (preferred)</span><br>
+<span class="t">Thread</span> t = <span class="k">new</span> <span class="t">Thread</span>(() -&gt; {<br>
+&nbsp;&nbsp;System.out.<span class="m">println</span>(<span class="s">"Running in: "</span> + <span class="t">Thread</span>.<span class="m">currentThread</span>().<span class="m">getName</span>());<br>
+});<br>
+t.<span class="m">start</span>();<br><br>
+<span class="c">// synchronized — only one thread at a time</span><br>
+<span class="k">public synchronized void</span> <span class="m">increment</span>() {<br>
+&nbsp;&nbsp;count++;<br>
+}<br><br>
+<span class="c">// Volatile — ensures visibility across threads</span><br>
+<span class="k">private volatile boolean</span> running = <span class="k">true</span>;<br><br>
+<span class="c">// AtomicInteger — thread-safe counter without synchronized</span><br>
+<span class="k">private</span> <span class="t">AtomicInteger</span> counter = <span class="k">new</span> <span class="t">AtomicInteger</span>(<span class="num">0</span>);<br>
+counter.<span class="m">incrementAndGet</span>(); <span class="c">// atomic, no sync needed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ExecutorService -->
+    <div class="section" id="concurrent">
+      <div class="section-badge">⚙️ Section 10</div>
+      <h2>ExecutorService & Thread Pools</h2>
+      <p class="lead">Never create raw threads in production. Use ExecutorService to manage thread pools. Thread creation is expensive — pools reuse threads. Spring's @Async uses this under the hood.</p>
+
+      <div class="code">
+        <div class="code-header"><span>ExecutorService — thread pools</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Fixed thread pool — 10 threads max</span><br>
+<span class="t">ExecutorService</span> pool = <span class="t">Executors</span>.<span class="m">newFixedThreadPool</span>(<span class="num">10</span>);<br><br>
+<span class="c">// Submit tasks — returns Future for result</span><br>
+<span class="t">Future</span>&lt;<span class="t">String</span>&gt; future = pool.<span class="m">submit</span>(() -&gt; {<br>
+&nbsp;&nbsp;<span class="c">// runs in thread pool</span><br>
+&nbsp;&nbsp;<span class="k">return</span> externalApi.<span class="m">fetchData</span>();<br>
+});<br><br>
+<span class="c">// Block and get result (5 second timeout)</span><br>
+<span class="t">String</span> result = future.<span class="m">get</span>(<span class="num">5</span>, <span class="t">TimeUnit</span>.<span class="n">SECONDS</span>);<br><br>
+<span class="c">// Always shutdown executor when done</span><br>
+pool.<span class="m">shutdown</span>();<br><br>
+<span class="c">// Spring Boot — configure thread pool for @Async</span><br>
+<span class="a">@Bean</span><br>
+<span class="k">public</span> <span class="t">TaskExecutor</span> <span class="m">taskExecutor</span>() {<br>
+&nbsp;&nbsp;<span class="t">ThreadPoolTaskExecutor</span> ex = <span class="k">new</span> <span class="t">ThreadPoolTaskExecutor</span>();<br>
+&nbsp;&nbsp;ex.<span class="m">setCorePoolSize</span>(<span class="num">5</span>);<br>
+&nbsp;&nbsp;ex.<span class="m">setMaxPoolSize</span>(<span class="num">20</span>);<br>
+&nbsp;&nbsp;ex.<span class="m">setQueueCapacity</span>(<span class="num">100</span>);<br>
+&nbsp;&nbsp;<span class="k">return</span> ex;<br>
+}
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CompletableFuture -->
+    <div class="section" id="completable">
+      <div class="section-badge">🔀 Section 11 · Java 8</div>
+      <h2>CompletableFuture <span class="version-tag">Java 8+</span></h2>
+      <p class="lead">CompletableFuture is the modern way to write async non-blocking code. Chain operations, combine multiple async tasks, handle errors — without callbacks hell.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Async workflows with CompletableFuture</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Run async, transform result, handle error</span><br>
+<span class="t">CompletableFuture</span>&lt;<span class="t">OrderDTO</span>&gt; result =<br>
+&nbsp;&nbsp;<span class="t">CompletableFuture</span>.<span class="m">supplyAsync</span>(() -&gt; orderRepo.<span class="m">findById</span>(id))<br>
+&nbsp;&nbsp;.<span class="m">thenApply</span>(order -&gt; mapper.<span class="m">toDTO</span>(order))<br>
+&nbsp;&nbsp;.<span class="m">exceptionally</span>(ex -&gt; {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;log.<span class="m">error</span>(<span class="s">"Failed to fetch order"</span>, ex);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">return null</span>;<br>
+&nbsp;&nbsp;});<br><br>
+<span class="c">// Run two async tasks in PARALLEL, combine results</span><br>
+<span class="t">CompletableFuture</span>&lt;<span class="t">User</span>&gt; userFuture    = <span class="t">CompletableFuture</span>.<span class="m">supplyAsync</span>(() -&gt; userApi.<span class="m">get</span>(userId));<br>
+<span class="t">CompletableFuture</span>&lt;<span class="t">List</span>&lt;<span class="t">Order</span>&gt;&gt; ordFuture = <span class="t">CompletableFuture</span>.<span class="m">supplyAsync</span>(() -&gt; orderApi.<span class="m">get</span>(userId));<br><br>
+<span class="t">CompletableFuture</span>&lt;<span class="t">UserProfile</span>&gt; combined =<br>
+&nbsp;&nbsp;userFuture.<span class="m">thenCombine</span>(ordFuture, (<span class="v">user</span>, <span class="v">orders</span>) -&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">new</span> <span class="t">UserProfile</span>(user, orders)   <span class="c">// both run in parallel!</span><br>
+&nbsp;&nbsp;);
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Records -->
+    <div class="section" id="records">
+      <div class="section-badge">📦 Section 12 · Java 16</div>
+      <h2>Records <span class="version-tag">Java 16+</span></h2>
+      <p class="lead">Records are immutable data classes with auto-generated constructor, getters, equals, hashCode, and toString. Perfect for DTOs — replaces 50 lines of boilerplate with 1 line.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Records vs traditional class</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Before — boilerplate DTO class (50+ lines with Lombok)</span><br>
+<span class="k">public class</span> <span class="t">UserDTO</span> {<br>
+&nbsp;&nbsp;<span class="k">private final</span> <span class="t">Long</span> id;<br>
+&nbsp;&nbsp;<span class="k">private final</span> <span class="t">String</span> name;<br>
+&nbsp;&nbsp;<span class="k">private final</span> <span class="t">String</span> email;<br>
+&nbsp;&nbsp;<span class="c">// constructor, getters, equals, hashCode, toString...</span><br>
+}<br><br>
+<span class="c">// Java 16 Record — same result in 1 line!</span><br>
+<span class="k">public record</span> <span class="t">UserDTO</span>(<span class="t">Long</span> id, <span class="t">String</span> name, <span class="t">String</span> email) {}<br><br>
+<span class="c">// Auto-generated: constructor, id(), name(), email(), equals(), hashCode(), toString()</span><br>
+<span class="t">UserDTO</span> dto = <span class="k">new</span> <span class="t">UserDTO</span>(<span class="num">1L</span>, <span class="s">"Shashi"</span>, <span class="s">"shashi@mail.com"</span>);<br>
+dto.<span class="m">name</span>();  <span class="c">// "Shashi" — accessor, not getName()</span><br><br>
+<span class="c">// Records with validation in compact constructor</span><br>
+<span class="k">public record</span> <span class="t">Money</span>(<span class="t">BigDecimal</span> amount, <span class="t">String</span> currency) {<br>
+&nbsp;&nbsp;<span class="k">public</span> <span class="t">Money</span> {  <span class="c">// compact constructor</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">if</span> (amount.<span class="m">compareTo</span>(<span class="t">BigDecimal</span>.<span class="n">ZERO</span>) &lt; <span class="num">0</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">throw new</span> <span class="t">IllegalArgumentException</span>(<span class="s">"Amount cannot be negative"</span>);<br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Sealed Classes -->
+    <div class="section" id="sealed">
+      <div class="section-badge">🔒 Section 13 · Java 17</div>
+      <h2>Sealed Classes <span class="version-tag">Java 17+</span></h2>
+      <p class="lead">Sealed classes restrict which classes can extend or implement them. Perfect for modeling a fixed set of types — like payment methods, event types, or API responses.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Sealed classes — modeling domain events</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Sealed — only these 3 classes can extend Payment</span><br>
+<span class="k">public sealed class</span> <span class="t">Payment</span> <span class="k">permits</span> <span class="t">UpiPayment</span>, <span class="t">CardPayment</span>, <span class="t">NetBanking</span> {}<br><br>
+<span class="k">public final class</span> <span class="t">UpiPayment</span> <span class="k">extends</span> <span class="t">Payment</span> {<br>
+&nbsp;&nbsp;<span class="k">private final</span> <span class="t">String</span> upiId;<br>
+}<br><br>
+<span class="k">public final class</span> <span class="t">CardPayment</span> <span class="k">extends</span> <span class="t">Payment</span> {<br>
+&nbsp;&nbsp;<span class="k">private final</span> <span class="t">String</span> last4Digits;<br>
+}<br><br>
+<span class="c">// Compiler knows ALL subtypes → exhaustive switch!</span><br>
+<span class="t">String</span> method = <span class="k">switch</span> (payment) {<br>
+&nbsp;&nbsp;<span class="k">case</span> <span class="t">UpiPayment</span> u   -&gt; <span class="s">"UPI: "</span> + u.<span class="m">upiId</span>();<br>
+&nbsp;&nbsp;<span class="k">case</span> <span class="t">CardPayment</span> c  -&gt; <span class="s">"Card ending: "</span> + c.<span class="m">last4Digits</span>();<br>
+&nbsp;&nbsp;<span class="k">case</span> <span class="t">NetBanking</span> n   -&gt; <span class="s">"Net Banking"</span>;<br>
+}; <span class="c">// No default needed — compiler verifies all cases covered</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Pattern Matching -->
+    <div class="section" id="pattern">
+      <div class="section-badge">🎯 Section 14 · Java 16+</div>
+      <h2>Pattern Matching <span class="version-tag">Java 16+</span></h2>
+      <p class="lead">Pattern matching for instanceof eliminates verbose casting. Switch expressions (Java 14+) make multi-branch logic clean and exhaustive.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Pattern matching — before & after</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Before — verbose instanceof + cast</span><br>
+<span class="k">if</span> (obj <span class="k">instanceof</span> <span class="t">String</span>) {<br>
+&nbsp;&nbsp;<span class="t">String</span> s = (<span class="t">String</span>) obj;   <span class="c">// redundant cast</span><br>
+&nbsp;&nbsp;System.out.<span class="m">println</span>(s.<span class="m">length</span>());<br>
+}<br><br>
+<span class="c">// Java 16+ — pattern variable (no cast!)</span><br>
+<span class="k">if</span> (obj <span class="k">instanceof</span> <span class="t">String</span> s) {<br>
+&nbsp;&nbsp;System.out.<span class="m">println</span>(s.<span class="m">length</span>());  <span class="c">// s is already typed</span><br>
+}<br><br>
+<span class="c">// Switch expression with patterns (Java 21)</span><br>
+<span class="t">String</span> result = <span class="k">switch</span> (obj) {<br>
+&nbsp;&nbsp;<span class="k">case</span> <span class="t">Integer</span> i -&gt; <span class="s">"Integer: "</span> + i;<br>
+&nbsp;&nbsp;<span class="k">case</span> <span class="t">String</span> s <span class="k">when</span> s.<span class="m">isEmpty</span>() -&gt; <span class="s">"Empty string"</span>;<br>
+&nbsp;&nbsp;<span class="k">case</span> <span class="t">String</span> s -&gt; <span class="s">"String: "</span> + s;<br>
+&nbsp;&nbsp;<span class="k">case null</span> -&gt; <span class="s">"Null value"</span>;<br>
+&nbsp;&nbsp;<span class="k">default</span> -&gt; <span class="s">"Unknown type"</span>;<br>
+};
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Text Blocks -->
+    <div class="section" id="textblocks">
+      <div class="section-badge">📝 Section 15 · Java 15+</div>
+      <h2>Text Blocks & Other Modern Features</h2>
+      <p class="lead">A collection of Java 11–21 quality-of-life improvements that you'll use daily.</p>
+
+      <div class="code">
+        <div class="code-header"><span>Text blocks, var, new String methods</span><span class="lang-badge">Java</span></div>
+        <div class="code-body">
+<span class="c">// Text Blocks (Java 15) — multi-line strings, perfect for SQL/JSON</span><br>
+<span class="t">String</span> sql = <span class="s">"""<br>
+&nbsp;&nbsp;SELECT u.id, u.name, COUNT(o.id) as order_count<br>
+&nbsp;&nbsp;FROM users u<br>
+&nbsp;&nbsp;LEFT JOIN orders o ON o.user_id = u.id<br>
+&nbsp;&nbsp;WHERE u.status = 'ACTIVE'<br>
+&nbsp;&nbsp;GROUP BY u.id<br>
+&nbsp;&nbsp;"""</span>;<br><br>
+<span class="c">// var (Java 10) — local variable type inference</span><br>
+<span class="k">var</span> users = userRepo.<span class="m">findAll</span>();   <span class="c">// type is inferred: List&lt;User&gt;</span><br>
+<span class="k">var</span> map = <span class="k">new</span> <span class="t">HashMap</span>&lt;<span class="t">String</span>, <span class="t">List</span>&lt;<span class="t">Order</span>&gt;&gt;();  <span class="c">// cleaner</span><br><br>
+<span class="c">// String methods (Java 11+)</span><br>
+<span class="s">"  hello  "</span>.<span class="m">strip</span>();          <span class="c">// "hello" — unicode-aware trim</span><br>
+<span class="s">""</span>.<span class="m">isBlank</span>();                  <span class="c">// true — null-safe empty check</span><br>
+<span class="s">"line1\nline2"</span>.<span class="m">lines</span>().<span class="m">toList</span>();  <span class="c">// ["line1", "line2"]</span><br>
+<span class="s">"ha"</span>.<span class="m">repeat</span>(<span class="num">3</span>);               <span class="c">// "hahaha"</span><br><br>
+<span class="c">// instanceof with records (Java 21 — sweet spot)</span><br>
+<span class="k">if</span> (response <span class="k">instanceof</span> <span class="t">ApiResponse</span>(<span class="t">Long</span> id, <span class="t">String</span> name, _)) {<br>
+&nbsp;&nbsp;System.out.<span class="m">println</span>(<span class="s">"Got: "</span> + name);<br>
+}
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Memory -->
+    <div class="section" id="memory">
+      <div class="section-badge">🧠 Section 16</div>
+      <h2>JVM Memory Model</h2>
+      <p class="lead">The JVM divides memory into regions. Understanding this is critical for debugging OutOfMemoryErrors and tuning Spring Boot in production (especially on EC2/containers).</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title" style="color:var(--java)">Heap</div>
+          <div class="card-text">Where all objects live. Divided into Young Generation (new objects) and Old Generation (long-lived objects). Controlled by -Xmx (max) and -Xms (initial).</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--blue)">Stack</div>
+          <div class="card-text">Per-thread memory. Stores method call frames, local variables, and references. StackOverflowError = infinite recursion. Not garbage-collected — auto-freed when method returns.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--purple)">Metaspace</div>
+          <div class="card-text">Stores class metadata (method bytecode, class definitions). Replaced PermGen in Java 8. Grows dynamically by default. Spring Boot with many classes can use 256MB+.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--green)">Off-Heap / Direct</div>
+          <div class="card-text">NIO ByteBuffers. Used by Netty (Spring WebFlux), Kafka, etc. Not managed by GC — you manage allocation/deallocation. Fast I/O.</div>
+        </div>
+      </div>
+
+      <div class="code">
+        <div class="code-header"><span>JVM flags for Spring Boot on EC2/containers</span><span class="lang-badge">Shell</span></div>
+        <div class="code-body">
+<span class="c"># For a 2GB container (EC2 t3.small)</span><br>
+<span class="g">java -Xms512m -Xmx1280m \</span><br>
+<span class="g">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-XX:MaxMetaspaceSize=256m \</span><br>
+<span class="g">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-XX:+UseG1GC \</span><br>
+<span class="g">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-XX:+PrintGCDetails \</span><br>
+<span class="g">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-jar app.jar</span><br><br>
+<span class="c"># Rule of thumb: -Xmx = 60-70% of available RAM</span><br>
+<span class="c"># Leave room for Metaspace + OS + non-heap memory</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- GC -->
+    <div class="section" id="gc">
+      <div class="section-badge">🗑️ Section 17</div>
+      <h2>Garbage Collection</h2>
+      <p class="lead">GC automatically frees memory from unreachable objects. You don't manually free memory in Java, but you can influence GC behavior. Understanding GC prevents latency spikes and OOM errors in production.</p>
+
+      <table>
+        <tr><th>GC Algorithm</th><th>Best For</th><th>Flag</th></tr>
+        <tr><td><strong style="color:var(--java)">G1GC</strong></td><td>Default (Java 9+). Balanced throughput + latency. Good for most Spring Boot apps.</td><td>-XX:+UseG1GC</td></tr>
+        <tr><td><strong style="color:var(--blue)">ZGC</strong></td><td>Ultra-low pause (&lt;1ms). Large heaps (GB). APIs needing consistent sub-millisecond response.</td><td>-XX:+UseZGC</td></tr>
+        <tr><td><strong style="color:var(--purple)">Shenandoah</strong></td><td>Concurrent GC, low pauses. Similar to ZGC. Good for latency-sensitive workloads.</td><td>-XX:+UseShenandoahGC</td></tr>
+        <tr><td><strong style="color:var(--muted)">Serial/Parallel</strong></td><td>Batch jobs, simple apps. Max throughput but causes stop-the-world pauses.</td><td>-XX:+UseParallelGC</td></tr>
+      </table>
+
+      <div class="alert new">
+        <span class="alert-icon">✨</span>
+        <span><strong>Production tip:</strong> Enable GC logging and review it: <span class="hl">-Xlog:gc*:file=gc.log:time</span>. If you see frequent Full GC events → heap is too small (increase -Xmx) or you have a memory leak. Spring Boot Actuator's <code style="font-family:'JetBrains Mono';font-size:11px">/actuator/metrics/jvm.gc.pause</code> shows GC pause times in real time.</span>
+      </div>
+
+      <!-- Final summary -->
+      <div style="margin-top: 40px; background: var(--java-dim); border: 1px solid var(--java-border); border-radius: 8px; padding: 24px;">
+        <div style="font-size: 11px; letter-spacing: 2px; color: var(--java); font-family: 'JetBrains Mono', monospace; margin-bottom: 16px; text-transform: uppercase;">📍 Modern Java — What Every Java Dev Must Know</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="font-size: 12px; color: #7a7295; line-height: 1.9; font-family: 'JetBrains Mono', monospace;">
+            OOP: encapsulation, polymorphism<br>
+            Collections: right tool for the job<br>
+            Generics: type-safe code<br>
+            Exceptions: checked vs unchecked<br>
+            Lambdas: concise functional code<br>
+            Streams: declarative data pipelines
+          </div>
+          <div style="font-size: 12px; color: #7a7295; line-height: 1.9; font-family: 'JetBrains Mono', monospace;">
+            Optional: null-safe code<br>
+            CompletableFuture: async workflows<br>
+            Records: zero-boilerplate DTOs<br>
+            Sealed + Switch: exhaustive modeling<br>
+            var + Text blocks: clean code<br>
+            GC + Memory: production tuning
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('.section');
+  const links = document.querySelectorAll('.sidebar-link');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = document.querySelector(`.sidebar-link[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
